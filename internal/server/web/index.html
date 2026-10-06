@@ -1,52 +1,60 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ctfile-down · 城通网盘下载器</title>
-  <link rel="stylesheet" href="/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ctfile-down</title>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <div class="brand">
-        <span class="logo">⬇</span>
-        <div>
-          <h1>ctfile-down</h1>
-          <p class="subtitle">城通网盘（CTFile）高速下载器 · 分段加速</p>
-        </div>
-      </div>
-    </header>
 
-    <section class="card">
-      <h2>新建下载</h2>
-      <div class="row">
-        <input id="url" type="text" placeholder="粘贴城通网盘分享链接，例如 https://urlxx.ctfile.com/f/xxxx?p=1234" autocomplete="off" spellcheck="false">
-        <button id="resolve" class="btn">解析</button>
-      </div>
-      <div id="fileInfo" class="file-info hidden">
-        <div class="file-icon">📄</div>
-        <div class="file-meta">
-          <div id="fileName" class="file-name"></div>
-          <div id="fileSize" class="file-size"></div>
-        </div>
-        <button id="download" class="btn btn-primary">开始下载</button>
-      </div>
-      <p id="msg" class="msg hidden"></p>
-    </section>
+<div class="app">
 
-    <section class="card">
-      <h2>下载任务</h2>
-      <div id="tasks" class="tasks">
-        <div class="empty" id="empty">暂无任务，粘贴链接开始下载</div>
-      </div>
-    </section>
+  <header class="titlebar">
+    <div class="titlebar-left">
+      <h1>ctfile-down</h1>
+      <span class="ver" id="versionText"></span>
+    </div>
+    <button class="pathbtn" id="saveDirChip" type="button" title="点击复制保存目录">
+      <span id="saveDirText">…</span>
+    </button>
+  </header>
 
-    <footer class="footer">
-      <span>ctfile-down v0.1.0</span>
-    </footer>
-  </div>
+  <section class="composer">
+    <div class="inputs">
+      <input id="url" type="text" placeholder="粘贴城通分享链接，例如 https://url67.ctfile.com/f/xxxx?p=1234"
+             spellcheck="false" autocomplete="off" autocapitalize="off">
+      <input id="passcode" type="text" placeholder="提取码" spellcheck="false" autocomplete="off" maxlength="24">
+      <button class="btn" id="resolveBtn" type="button">解析</button>
+    </div>
+    <p class="note" id="notice" hidden></p>
 
-  <script src="/app.js"></script>
+    <div class="pending" id="result" hidden>
+      <span class="pending-name" id="resName">—</span>
+      <span class="pending-size" id="resSize">—</span>
+      <button class="btn btn-primary" id="downloadBtn" type="button">开始下载</button>
+    </div>
+  </section>
+
+  <section class="list">
+    <div class="list-head">
+      <span class="list-title">下载</span>
+      <span class="list-count" id="taskCount">0</span>
+      <span class="list-spacer"></span>
+      <button class="linkbtn" id="clearDoneBtn" type="button" hidden>清除已结束</button>
+    </div>
+    <div id="tasks"></div>
+    <p class="placeholder" id="empty">还没有任务。粘贴链接后按「解析」。</p>
+  </section>
+
+  <footer class="statusbar">
+    <span id="statusText">就绪</span>
+  </footer>
+
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="/app.js"></script>
 </body>
 </html>

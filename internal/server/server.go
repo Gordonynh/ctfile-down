@@ -3,6 +3,7 @@ package server
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -34,6 +35,7 @@ func (s *Server) routes() {
 
 	mux.HandleFunc("/api/resolve", s.handleResolve)
 	mux.HandleFunc("/api/download", s.handleDownload)
+	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/tasks", s.handleTasks)
 	mux.HandleFunc("/api/tasks/", s.handleTask)
 	s.mux = mux
@@ -54,7 +56,8 @@ func (s *Server) handleResolve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		URL string `json:"url"`
+		URL      string `json:"url"`
+		Passcode string `json:"passcode"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad request")
@@ -62,18 +65,25 @@ func (s *Server) handleResolve(w http.ResponseWriter, r *http.Request) {
 	}
 	link, err := ctfile.ParseLink(req.URL)
 	if err != nil {
-		writeErr(w, http.StatusBadRequest, err.Error())
+		writeCode(w, http.StatusBadRequest, "bad_link", err.Error())
 		return
+	}
+	if req.Passcode != "" {
+		link.Passcode = req.Passcode
 	}
 	client := ctfile.New(link)
 	info, err := client.Resolve()
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		if errors.Is(err, ctfile.ErrPasscodeRequired) {
+			writeCode(w, http.StatusUnauthorized, "need_passcode", "该链接需要提取码，请填写后重试")
+			return
+		}
+		writeCode(w, http.StatusBadGateway, "resolve_failed", err.Error())
 		return
 	}
 	t, err := client.GetDownloadURL(info)
 	if err != nil {
-		writeErr(w, http.StatusBadGateway, err.Error())
+		writeCode(w, http.StatusBadGateway, "resolve_failed", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -89,18 +99,30 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		URL string `json:"url"`
+		URL      string `json:"url"`
+		Passcode string `json:"passcode"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, http.StatusBadRequest, "bad request")
 		return
 	}
-	task, err := s.mgr.Start(req.URL)
+	task, err := s.mgr.Start(req.URL, req.Passcode)
 	if err != nil {
-		writeErr(w, http.StatusBadRequest, err.Error())
+		if errors.Is(err, ctfile.ErrPasscodeRequired) {
+			writeCode(w, http.StatusUnauthorized, "need_passcode", "该链接需要提取码，请填写后重试")
+			return
+		}
+		writeCode(w, http.StatusBadRequest, "download_failed", err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, task)
+}
+
+// handleConfig 暴露只读运行时配置，供前端展示保存目录。
+func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{
+		"save_dir": s.mgr.SaveDir(),
+	})
 }
 
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
@@ -144,4 +166,9 @@ func writeJSON(w http.ResponseWriter, code int, v any) {
 
 func writeErr(w http.ResponseWriter, code int, msg string) {
 	writeJSON(w, code, map[string]string{"error": msg})
+}
+
+// writeCode 返回带机器可读错误码的响应，便于前端区分处理（如需要提取码）。
+func writeCode(w http.ResponseWriter, status int, code, msg string) {
+	writeJSON(w, status, map[string]string{"code": code, "error": msg})
 }

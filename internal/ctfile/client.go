@@ -2,6 +2,7 @@ package ctfile
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -16,8 +17,12 @@ const (
 	userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
 )
 
+// ErrPasscodeRequired 表示该文件需要提取码（或提取码不正确，接口返回 code 423）。
+var ErrPasscodeRequired = errors.New("需要提取码")
+
 // Link is a parsed ctfile share link.
 type Link struct {
+	Kind     string // f=文件, d=目录, l=列表, s=分享
 	FileKey  string
 	Passcode string
 	PageURL  string
@@ -63,24 +68,84 @@ func New(link Link) *Client {
 	}
 }
 
-// ParseLink parses a ctfile share URL such as
-// https://url67.ctfile.com/f/65712267-17569899321195-e8ce7f?p=5577
+// knownHosts 是城通网盘常见的分享域名后缀。
+var knownHosts = []string{"ctfile.com", "ctfile.net", "ctfile.cc", "545c.com", "ctfile.cn"}
+
+func isCtfileHost(host string) bool {
+	host = strings.ToLower(strings.TrimPrefix(host, "www."))
+	for _, h := range knownHosts {
+		if host == h || strings.HasSuffix(host, "."+h) {
+			return true
+		}
+	}
+	return false
+}
+
+// ParseLink parses a ctfile share URL. 支持的形态：
+//
+//	https://url67.ctfile.com/f/65712267-17569899321195-e8ce7f?p=5577
+//	https://545c.com/f/65712267-17569899321195-e8ce7f        (无提取码)
+//	https://url67.ctfile.com/s/xxxx?p=1234&fk=..&d=..        (分享链接)
+//	ctfile://xturlXXXX                                      (App 分享码)
+//
+// 路径首段决定类型：f=文件，d=目录，l=列表，s=分享。
 func ParseLink(raw string) (Link, error) {
 	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return Link{}, fmt.Errorf("链接为空")
+	}
+	// App 分享码（ctfile://xturl...）无法直接解析成下载地址，明确提示。
+	if strings.HasPrefix(strings.ToLower(raw), "ctfile://") {
+		return Link{}, fmt.Errorf("这是 App 内分享码（ctfile://），请改用网页分享链接")
+	}
+	// 容忍省略协议头的输入，例如 url67.ctfile.com/f/xxx
+	if !strings.Contains(raw, "://") {
+		raw = "https://" + raw
+	}
+
 	u, err := url.Parse(raw)
 	if err != nil {
 		return Link{}, fmt.Errorf("无效链接: %w", err)
 	}
-	if !strings.Contains(strings.ToLower(u.Host), "ctfile.com") {
-		return Link{}, fmt.Errorf("不是 ctfile.com 链接: %s", u.Host)
+	if u.Host == "" {
+		return Link{}, fmt.Errorf("链接缺少域名，请粘贴完整的分享链接")
 	}
+	if !isCtfileHost(u.Host) {
+		return Link{}, fmt.Errorf("暂不支持该域名 `%s`（仅支持城通网盘分享链接）", u.Host)
+	}
+
 	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(parts) < 2 || !strings.HasPrefix(parts[0], "f") {
-		return Link{}, fmt.Errorf("无法识别的 ctfile 链接格式（应为 /f/<id>）")
+	if len(parts) < 2 || len(parts[1]) == 0 {
+		return Link{}, fmt.Errorf("无法识别的链接格式（应形如 /f/<文件ID>）")
 	}
+
+	kind := strings.ToLower(parts[0])
+	switch {
+	case strings.HasPrefix(kind, "f"):
+		kind = "f"
+	case strings.HasPrefix(kind, "s"):
+		kind = "s"
+	case strings.HasPrefix(kind, "d"):
+		kind = "d"
+	case strings.HasPrefix(kind, "l"):
+		kind = "l"
+	default:
+		return Link{}, fmt.Errorf("无法识别的链接类型 `%s`", parts[0])
+	}
+
+	q := u.Query()
+	passcode := q.Get("p")
+	if passcode == "" {
+		passcode = q.Get("password")
+	}
+	if passcode == "" {
+		passcode = q.Get("passcode")
+	}
+
 	return Link{
+		Kind:     kind,
 		FileKey:  parts[1],
-		Passcode: u.Query().Get("p"),
+		Passcode: passcode,
 		PageURL:  u.String(),
 	}, nil
 }
@@ -111,6 +176,11 @@ func (c *Client) getJSON(u string, out any) error {
 
 // Resolve fetches file metadata for the link.
 func (c *Client) Resolve() (*FileInfo, error) {
+	if c.link.Kind != "f" {
+		name := map[string]string{"d": "目录", "l": "列表", "s": "分享文件夹"}[c.link.Kind]
+		return nil, fmt.Errorf("暂不支持%s链接，请改用具体的文件分享链接（形如 /f/<文件ID>）", name)
+	}
+
 	u := fmt.Sprintf("%s/getfile.php?path=f&f=%s&passcode=%s&r=%d&ref=&url=%s",
 		baseAPI,
 		url.QueryEscape(c.link.FileKey),
@@ -136,7 +206,12 @@ func (c *Client) Resolve() (*FileInfo, error) {
 	if err := c.getJSON(u, &raw); err != nil {
 		return nil, fmt.Errorf("解析文件失败: %w", err)
 	}
-	if raw.Code != 200 || raw.File.FileID == 0 {
+	switch {
+	case raw.Code == 423:
+		return nil, ErrPasscodeRequired
+	case raw.Code == 200 && raw.File.FileID != 0:
+		// ok
+	default:
 		if raw.Message != "" {
 			return nil, fmt.Errorf("解析失败: %s", raw.Message)
 		}

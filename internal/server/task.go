@@ -82,11 +82,19 @@ func NewManager(saveDir string) *Manager {
 	return &Manager{jobs: map[string]*job{}, saveDir: saveDir}
 }
 
+// SaveDir returns the directory downloads are written to.
+func (m *Manager) SaveDir() string {
+	return m.saveDir
+}
+
 // Start resolves a link and begins downloading it in the background.
-func (m *Manager) Start(rawURL string) (Task, error) {
+func (m *Manager) Start(rawURL, passcode string) (Task, error) {
 	link, err := ctfile.ParseLink(rawURL)
 	if err != nil {
 		return Task{}, err
+	}
+	if passcode != "" {
+		link.Passcode = passcode
 	}
 	client := ctfile.New(link)
 	info, err := client.Resolve()

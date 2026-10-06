@@ -1,6 +1,7 @@
 # 编译产物
 /bin/
 /dist/
+/.build/
 *.exe
 ctfile-down
 ctfile-down-*
