@@ -82,12 +82,12 @@ jobs:
 
       - name: Flatten artifacts
         run: |
-          find dist -mindepth 2 -type f -exec mv -f {} dist/ \;
-          find dist -mindepth 1 -type d -empty -delete
-          ls -lh dist
+          mkdir -p flat
+          find dist -mindepth 2 -type f -exec mv -f {} flat/ \;
+          ls -lh flat
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: flat/*
           generate_release_notes: true
