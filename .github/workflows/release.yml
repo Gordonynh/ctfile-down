@@ -1,0 +1,87 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+          - goos: windows
+            goarch: arm64
+            ext: .exe
+          - goos: linux
+            goarch: amd64
+            ext: ""
+          - goos: linux
+            goarch: arm64
+            ext: ""
+          - goos: linux
+            goarch: "386"
+            ext: ""
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+            ext: ""
+          - goos: darwin
+            goarch: amd64
+            ext: ""
+          - goos: darwin
+            goarch: arm64
+            ext: ""
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm || '7' }}
+          CGO_ENABLED: "0"
+          VERSION: ${{ github.ref_name }}
+        run: |
+          out="ctfile-down_${GOOS}_${GOARCH}"
+          if [ "${GOOS}" = "linux" ] && [ "${GOARCH}" = "arm" ]; then
+            out="${out}v${GOARM}"
+          fi
+          out="${out}${{ matrix.ext }}"
+          go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "${out}" .
+          echo "artifact=${out}" >> "$GITHUB_ENV"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctfile-down_${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.goarm && 'v' }}${{ matrix.goarm }}
+          path: ctfile-down_${{ matrix.goos }}_${{ matrix.goarch }}*${{ matrix.ext }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          generate_release_notes: true

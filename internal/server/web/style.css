@@ -1,0 +1,140 @@
+:root {
+  --bg: #0f1117;
+  --bg-2: #171a23;
+  --card: #1c2029;
+  --border: #2a2f3a;
+  --text: #e6e8ee;
+  --muted: #8b93a7;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --green: #22c55e;
+  --red: #ef4444;
+  --amber: #f59e0b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+.header { display: flex; align-items: center; margin-bottom: 24px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff;
+}
+h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.subtitle { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.card h2 { margin: 0 0 16px; font-size: 15px; font-weight: 600; }
+
+.row { display: flex; gap: 10px; }
+input[type="text"] {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s;
+}
+input[type="text"]:focus { border-color: var(--accent); }
+
+.btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s;
+}
+.btn:hover { background: #232836; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+
+.file-info {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 16px; padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-2);
+}
+.file-icon { font-size: 30px; }
+.file-meta { flex: 1; min-width: 0; }
+.file-name { font-weight: 600; font-size: 15px; word-break: break-all; }
+.file-size { color: var(--muted); font-size: 13px; }
+
+.msg { margin: 14px 0 0; font-size: 13px; }
+.msg.error { color: var(--red); }
+
+.hidden { display: none; }
+
+.tasks { display: flex; flex-direction: column; gap: 12px; }
+.empty { color: var(--muted); text-align: center; padding: 24px; font-size: 14px; }
+
+.task {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--bg-2);
+}
+.task-head { display: flex; align-items: center; gap: 10px; }
+.task-name { flex: 1; font-weight: 600; font-size: 14px; word-break: break-all; min-width: 0; }
+.badge {
+  font-size: 11px; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+}
+.badge.downloading { color: var(--accent); border-color: var(--accent); }
+.badge.done { color: var(--green); border-color: var(--green); }
+.badge.error { color: var(--red); border-color: var(--red); }
+.badge.canceled { color: var(--amber); border-color: var(--amber); }
+
+.progress-track {
+  height: 8px; border-radius: 999px;
+  background: var(--border); overflow: hidden;
+  margin: 12px 0 8px;
+}
+.progress-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--accent), #8b5cf6);
+  border-radius: 999px;
+  transition: width .3s;
+}
+.task.done .progress-fill { background: var(--green); }
+
+.task-foot { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
+.task-foot .spacer { flex: 1; }
+.link-btn {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 12px; padding: 2px 6px;
+}
+.link-btn:hover { color: var(--red); }
+.task-error { color: var(--red); font-size: 12px; margin-top: 8px; word-break: break-all; }
+
+.footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }

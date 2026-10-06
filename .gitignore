@@ -1,0 +1,11 @@
+# 编译产物
+/bin/
+/dist/
+*.exe
+ctfile-down
+ctfile-down-*
+
+# 运行时产物
+downloads/
+*.parts/
+.DS_Store

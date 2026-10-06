@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ctfile-down · 城通网盘下载器</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="brand">
+        <span class="logo">⬇</span>
+        <div>
+          <h1>ctfile-down</h1>
+          <p class="subtitle">城通网盘（CTFile）高速下载器 · 分段加速</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>新建下载</h2>
+      <div class="row">
+        <input id="url" type="text" placeholder="粘贴城通网盘分享链接，例如 https://urlxx.ctfile.com/f/xxxx?p=1234" autocomplete="off" spellcheck="false">
+        <button id="resolve" class="btn">解析</button>
+      </div>
+      <div id="fileInfo" class="file-info hidden">
+        <div class="file-icon">📄</div>
+        <div class="file-meta">
+          <div id="fileName" class="file-name"></div>
+          <div id="fileSize" class="file-size"></div>
+        </div>
+        <button id="download" class="btn btn-primary">开始下载</button>
+      </div>
+      <p id="msg" class="msg hidden"></p>
+    </section>
+
+    <section class="card">
+      <h2>下载任务</h2>
+      <div id="tasks" class="tasks">
+        <div class="empty" id="empty">暂无任务，粘贴链接开始下载</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>ctfile-down v0.1.0</span>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
