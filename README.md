@@ -8,6 +8,14 @@
 - 内置 Web UI：粘贴链接 → 解析 → 下载，实时进度 / 速度 / 取消
 - 跨平台：Windows / Linux / macOS（amd64 / arm64 / 386 / arm）
 
+## 界面
+
+Web UI 采用接近原生工具的风格（浅色 / 深色跟随系统外观）：
+
+![浅色模式](docs/screenshot-light.png)
+
+![深色模式](docs/screenshot-dark.png)
+
 ## 快速开始
 
 从 [Releases](https://github.com/Gordonynh/ctfile-down/releases) 下载对应平台的产物。
